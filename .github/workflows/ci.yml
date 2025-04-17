@@ -37,7 +37,7 @@ jobs:
         make INSTALL_MOD_PATH=modules modules_install
         tar -czvf modules-$kernelversion.tar.gz -C modules .
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: wsl2-kernel
         path: |
