@@ -1,0 +1,46 @@
+name: Build WSL2 Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        repository: microsoft/WSL2-Linux-Kernel
+        ref: linux-msft-wsl-6.6.y
+        fetch-depth: 1
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential flex bison libssl-dev libelf-dev dwarves
+
+    - name: Configure kernel
+      run: |
+        # 使用 WSL 默认配置
+        cp Microsoft/config-wsl .config
+        make olddefconfig
+
+    - name: Build kernel
+      run: |
+        make -j$(nproc)
+
+    - name: Package artifacts
+      run: |
+        # 获取内核版本
+        kernelversion=$(make -s kernelversion)-microsoft-standard-WSL2
+        # 打包内核映像
+        cp arch/x86/boot/bzImage kernel-$kernelversion.img
+        # 打包模块
+        make INSTALL_MOD_PATH=modules modules_install
+        tar -czvf modules-$kernelversion.tar.gz -C modules .
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: wsl2-kernel
+        path: |
+          kernel-*.img
+          modules-*.tar.gz
